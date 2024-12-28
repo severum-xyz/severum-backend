@@ -1,8 +1,11 @@
-use sqlx::{Connection, PgConnection, Executor, PgPool};
+use std::collections::HashMap;
+use sqlx::{Connection, PgConnection, Executor, PgPool, Row};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use urlencoding::encode;
 use log::{info, error};
+use crate::models::challenge::ChallengeMetadata;
+use crate::utils::challenge_loader;
 
 pub fn get_database_url(db_name: &str) -> String {
     let database_user = env::var("DATABASE_USER").expect("DATABASE_USER must be set in .env");
@@ -60,6 +63,7 @@ async fn connect_to_target_database(target_database_url: &str) -> Result<PgPool,
 
 pub async fn initialize_database() -> Result<PgPool, sqlx::Error> {
     let database_name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set in .env");
+    let base_path = env::var("BASE_PATH").expect("BASE_PATH must be set in .env");
     let base_database_url = get_database_url("postgres");
 
     let mut base_connection = connect_to_postgres(&base_database_url).await?;
@@ -73,6 +77,7 @@ pub async fn initialize_database() -> Result<PgPool, sqlx::Error> {
     let target_database_url = get_database_url(&database_name);
     let pool = connect_to_target_database(&target_database_url).await?;
     initialize_tables(&pool).await?;
+    populate_database(&pool, base_path.as_str()).await?;
 
     Ok(pool)
 }
@@ -108,5 +113,97 @@ async fn initialize_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
         .await?;
 
     info!("Database tables initialized successfully.");
+    Ok(())
+}
+
+pub async fn populate_database(pool: &PgPool, base_path: &str) -> Result<(), sqlx::Error> {
+    info!("Populating database with challenges from base path: {}", base_path);
+
+    let challenges = challenge_loader::load_challenges(base_path);
+
+    if challenges.is_empty() {
+        error!("No challenges found to populate the database.");
+        return Ok(());
+    }
+
+    let mut categories_map: HashMap<String, Vec<ChallengeMetadata>> = HashMap::new();
+    for challenge in challenges {
+        categories_map
+            .entry(challenge.challenge.category.clone())
+            .or_default()
+            .push(challenge);
+    }
+
+    for (category_name, challenges) in categories_map {
+        let category_description = format!("Challenges related to {}", category_name);
+
+        let category_id = insert_category(pool, &category_name, &category_description).await?;
+
+        for challenge_metadata in challenges {
+            let challenge_details = challenge_metadata.challenge;
+
+            insert_challenge(
+                pool,
+                category_id,
+                &challenge_details.title,
+                &challenge_details.difficulty,
+                &challenge_details.description,
+                Some(&challenge_details.hint),
+            )
+                .await?;
+        }
+    }
+
+    info!("Database population complete.");
+    Ok(())
+}
+
+async fn insert_category(pool: &PgPool, name: &str, description: &str) -> Result<i32, sqlx::Error> {
+    if let Some(row) = sqlx::query(
+        r#"
+        INSERT INTO categories (name, description)
+        VALUES ($1, $2)
+        ON CONFLICT (name) DO NOTHING
+        RETURNING id
+        "#
+    )
+        .bind(name)
+        .bind(description)
+        .fetch_optional(pool)
+        .await?
+    {
+        return Ok(row.get::<i32, _>("id"));
+    }
+
+    let row = sqlx::query("SELECT id FROM categories WHERE name = $1")
+        .bind(name)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(row.get::<i32, _>("id"))
+}
+
+async fn insert_challenge(
+    pool: &PgPool,
+    category_id: i32,
+    name: &str,
+    difficulty: &str,
+    description: &str,
+    hint: Option<&str>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        INSERT INTO challenges (category_id, name, difficulty, description, hint)
+        VALUES ($1, $2, $3, $4, $5)
+        "#
+    )
+        .bind(category_id)
+        .bind(name)
+        .bind(difficulty)
+        .bind(description)
+        .bind(hint)
+        .execute(pool)
+        .await?;
+
     Ok(())
 }
