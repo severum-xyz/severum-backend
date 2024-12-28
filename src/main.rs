@@ -5,11 +5,13 @@ mod services;
 mod controllers;
 mod routes;
 
+use std::env;
+use std::path::PathBuf;
 use axum::{serve, Router};
 use env_logger::init as log_init;
 use log::info;
 use tokio::net::TcpListener;
-use crate::utils::create_db_pool;
+use crate::utils::{clone_or_update_repository, create_db_pool};
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +23,14 @@ async fn main() {
 
 async fn init() {
     dotenv::dotenv().ok();
+    clone_or_pull_repo().await;
     create_db_pool().await;
+}
+
+async fn clone_or_pull_repo() {
+    let repo_url = env::var("REPO_URL").expect("REPO_URL must be set in the environment");
+    let base_path = PathBuf::from(env::var("BASE_PATH").expect("BASE_PATH must be set in the environment"));
+    clone_or_update_repository(&repo_url, &base_path);
 }
 
 async fn run_server() {
@@ -29,8 +38,6 @@ async fn run_server() {
 
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
     info!("Server running on http://0.0.0.0:3000");
-
-    create_db_pool().await;
 
     serve(listener, app).await.unwrap();
 }
