@@ -1,11 +1,13 @@
 use crate::models::challenge::ChallengeMetadata;
 use std::fs;
 use std::path::Path;
+use log::{debug, error, info};
 
 pub fn load_challenges(base_path: &str) -> Vec<ChallengeMetadata> {
+    info!("Loading challenges from base path: {}", base_path);
     let base_dir = Path::new(base_path);
     if !base_dir.exists() {
-        eprintln!("Base directory does not exist: {}", base_path);
+        error!("Base directory does not exist: {}", base_path);
         return vec![];
     }
 
@@ -15,6 +17,7 @@ pub fn load_challenges(base_path: &str) -> Vec<ChallengeMetadata> {
 }
 
 fn scan_dir(dir: &Path, challenges: &mut Vec<ChallengeMetadata>, base_path: &str) {
+    debug!("Scanning directory: {:?}", dir);
     let Ok(entries) = fs::read_dir(dir) else { return };
 
     for entry in entries {
@@ -33,7 +36,7 @@ fn scan_dir(dir: &Path, challenges: &mut Vec<ChallengeMetadata>, base_path: &str
                 Ok(metadata) => {
                     challenges.push(metadata);
                 }
-                Err(e) => eprintln!("Invalid metadata.json: {}", e),
+                Err(e) => error!("Invalid metadata.json: {}", e),
             }
         }
 

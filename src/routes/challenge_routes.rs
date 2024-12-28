@@ -5,6 +5,7 @@ use axum::{
     extract::Path,
     http::StatusCode,
 };
+use log::info;
 use crate::controllers::{fetch_challenges, fetch_challenge_by_id};
 
 const BASE_PATH: &str = "/tmp/severum-challenges/";
@@ -20,11 +21,16 @@ pub async fn get_challenges() -> impl IntoResponse {
     Json(challenges)
 }
 
-
 pub async fn get_challenge(Path(id): Path<String>) -> impl IntoResponse {
-    let challenge = fetch_challenge_by_id(BASE_PATH, id).await;
+    let challenge = fetch_challenge_by_id(BASE_PATH, &id).await;
     match challenge {
-        Some(challenge) => Json(challenge).into_response(),
-        None => (StatusCode::NOT_FOUND, "Challenge not found").into_response(),
+        Some(challenge) => {
+            info!("Challenge found: ID: {}, Title: {}", id, challenge.challenge.title);
+            Json(challenge).into_response()
+        },
+        None => {
+            info!("Challenge not found: ID: {}", id);
+            (StatusCode::NOT_FOUND, "Challenge not found").into_response()
+        }
     }
 }
