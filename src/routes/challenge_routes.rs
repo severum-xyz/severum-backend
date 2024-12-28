@@ -1,15 +1,30 @@
-use axum::{Router, routing::get};
-use axum::response::{IntoResponse, Json};
-use crate::controllers::fetch_challenges;
+use axum::{
+    Router,
+    routing::get,
+    response::{IntoResponse, Json},
+    extract::Path,
+    http::StatusCode,
+};
+use crate::controllers::{fetch_challenges, fetch_challenge_by_id};
+
+const BASE_PATH: &str = "/tmp/severum-challenges/";
 
 pub fn routes() -> Router {
     Router::new()
         .route("/challenges", get(get_challenges))
+        .route("/challenges/:id", get(get_challenge))
 }
 
 pub async fn get_challenges() -> impl IntoResponse {
-    let base_path = "/tmp/severum-challenges/";
-    let challenges = fetch_challenges(base_path).await;
+    let challenges = fetch_challenges(BASE_PATH).await;
     Json(challenges)
 }
 
+
+pub async fn get_challenge(Path(id): Path<String>) -> impl IntoResponse {
+    let challenge = fetch_challenge_by_id(BASE_PATH, id).await;
+    match challenge {
+        Some(challenge) => Json(challenge).into_response(),
+        None => (StatusCode::NOT_FOUND, "Challenge not found").into_response(),
+    }
+}

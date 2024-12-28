@@ -1,6 +1,6 @@
 use crate::models::challenge::ChallengeMetadata;
-use crate::repositories::challenge_repository;
+use crate::repositories::challenge_repository::fetch_all_challenges;
 
 pub fn get_challenges(base_path: &str) -> Vec<ChallengeMetadata> {
-    challenge_repository::fetch_all_challenges(base_path)
+    fetch_all_challenges(base_path)
 }
