@@ -93,16 +93,14 @@ async fn initialize_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS challenges (
-            id SERIAL PRIMARY KEY,
+            id SERIAL NOT NULL,
             category_id INT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             difficulty TEXT NOT NULL,
             description TEXT NOT NULL,
             hint TEXT,
-            src_path TEXT NOT NULL,
-            exploit_path TEXT NOT NULL,
-            test_path TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY (category_id, id)
         )
         "#
     )
