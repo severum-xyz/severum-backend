@@ -1,3 +1,4 @@
+/*
 use axum::{
     Router,
     routing::get,
@@ -34,3 +35,5 @@ pub async fn get_challenge(Path(id): Path<String>) -> impl IntoResponse {
         }
     }
 }
+
+ */

@@ -4,6 +4,7 @@ mod repositories;
 mod services;
 mod controllers;
 mod routes;
+pub mod schema;
 
 use std::env;
 use std::path::PathBuf;
@@ -11,7 +12,7 @@ use axum::{serve, Router};
 use env_logger::init as log_init;
 use log::info;
 use tokio::net::TcpListener;
-use crate::utils::{clone_or_update_repository, initialize_database};
+use crate::utils::{clone_or_update_repository};
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +25,6 @@ async fn main() {
 async fn init() {
     dotenv::dotenv().ok();
     init_git().await;
-    init_database().await;
 }
 
 async fn init_git() {
@@ -33,15 +33,8 @@ async fn init_git() {
     clone_or_update_repository(&repo_url, &base_path);
 }
 
-async fn init_database() {
-    match initialize_database().await {
-        Ok(_) => info!("Database initialized successfully."),
-        Err(e) => eprintln!("Failed to initialize database: {}", e),
-    }
-}
-
 async fn run_server() {
-    let app = Router::new().merge(routes::app_routes());
+    let app = Router::new().merge(routes::user_routes());
 
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
     info!("Server running on http://0.0.0.0:3000");
