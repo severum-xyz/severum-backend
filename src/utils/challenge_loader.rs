@@ -1,3 +1,4 @@
+/*
 use crate::models::challenge::ChallengeMetadata;
 use std::fs;
 use std::path::Path;
@@ -43,3 +44,4 @@ fn scan_dir(dir: &Path, challenges: &mut Vec<ChallengeMetadata>, base_path: &str
         scan_dir(&path, challenges, base_path);
     }
 }
+*/

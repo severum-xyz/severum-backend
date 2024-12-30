@@ -1,7 +1,6 @@
 use crate::schema::users;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use serde::Deserialize;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = users)]
