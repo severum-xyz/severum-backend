@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Severum Backedn** is the backend component of the Severum Web3 security platform. Written in Rust, it provides the foundation for managing security challenges, fetching them from private repositories, and integrating with the Severum Sandbox to execute smart contract tests. Severum Core will ensure smooth communication between the frontend and backend, track user progress, and provide real-time reports.
+**Severum Backend** is the backend component of the Severum Web3 security platform. Written in Rust, it provides the foundation for managing security challenges, fetching them from private repositories, and integrating with the Severum Sandbox to execute smart contract tests. Severum Core will ensure smooth communication between the frontend and backend, track user progress, and provide real-time reports.
 
 ## Features
 
