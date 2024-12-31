@@ -1,3 +1,4 @@
+/*
 use crate::services::challenge_service::get_challenges;
 use crate::models::challenge::ChallengeMetadata;
 
@@ -9,3 +10,5 @@ pub async fn fetch_challenge_by_id(base_path: &str, id: &str) -> Option<Challeng
     let challenges = get_challenges(base_path);
     challenges.into_iter().find(|challenge| challenge.id == id)
 }
+
+ */
