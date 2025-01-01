@@ -4,7 +4,6 @@ use axum::{
     Json,
 };
 use serde::Serialize;
-use thiserror::Error;
 
 #[derive(Serialize, Debug)]
 pub struct ErrorResponse {
@@ -19,7 +18,7 @@ pub struct ErrorDetail {
     field: Option<String>,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum ControllerError {
     BadRequest(ErrorResponse),
     InternalServerError,
@@ -32,15 +31,27 @@ impl IntoResponse for ControllerError {
                 (StatusCode::BAD_REQUEST, Json(error_response)).into_response()
             }
             ControllerError::InternalServerError => {
-                let error_response = ErrorResponse {
-                    error: ErrorDetail {
-                        code: "INTERNAL_SERVER_ERROR".to_string(),
-                        message: "Internal server error.".to_string(),
-                        field: None,
-                    },
-                };
+                let error_response = ErrorResponse::new(
+                    "INTERNAL_SERVER_ERROR".to_string(),
+                    "Internal server error.".to_string(),
+                    None,
+                );
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)).into_response()
             }
         }
+    }
+}
+
+impl ErrorResponse {
+    pub fn new(code: String, message: String, field: Option<String>) -> Self {
+        Self {
+            error: ErrorDetail { code, message, field },
+        }
+    }
+}
+
+impl ErrorDetail {
+    pub fn new(code: String, message: String, field: Option<String>) -> Self {
+        Self { code, message, field }
     }
 }

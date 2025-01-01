@@ -1,9 +1,9 @@
-use axum::{Json};
+use axum::Json;
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use log::{info, error};
 use crate::services::user_service::UserService;
-use crate::controllers::errors::ControllerError;
+use crate::controllers::errors::{ControllerError, ErrorResponse};
 use crate::models::errors::{LoginError, RegistrationError};
 use crate::utils::get_db_connection;
 
@@ -31,11 +31,6 @@ pub struct LoginResponse {
     pub token: String,
 }
 
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
-}
-
 pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl IntoResponse, ControllerError> {
     let mut conn = get_db_connection().await;
 
@@ -49,27 +44,21 @@ pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl 
         Err(e) => {
             error!("Error: {}", e);
             let error_response = match e {
-                RegistrationError::EmailAlreadyTaken => ErrorResponse {
-                    error: ErrorDetail {
-                        code: "EMAIL_ALREADY_TAKEN".to_string(),
-                        message: "Email is already taken.".to_string(),
-                        field: Some("email".to_string()),
-                    },
-                },
-                RegistrationError::UsernameAlreadyTaken => ErrorResponse {
-                    error: ErrorDetail {
-                        code: "USERNAME_ALREADY_TAKEN".to_string(),
-                        message: "Username is already taken.".to_string(),
-                        field: Some("pseudo".to_string()),
-                    },
-                },
-                _ => ErrorResponse {
-                    error: ErrorDetail {
-                        code: "INTERNAL_SERVER_ERROR".to_string(),
-                        message: "Internal server error.".to_string(),
-                        field: None,
-                    },
-                },
+                RegistrationError::EmailAlreadyTaken => ErrorResponse::new(
+                    "EMAIL_ALREADY_TAKEN".to_string(),
+                    "Email is already taken.".to_string(),
+                    Some("email".to_string()),
+                ),
+                RegistrationError::UsernameAlreadyTaken => ErrorResponse::new(
+                    "USERNAME_ALREADY_TAKEN".to_string(),
+                    "Username is already taken.".to_string(),
+                    Some("pseudo".to_string()),
+                ),
+                _ => ErrorResponse::new(
+                    "INTERNAL_SERVER_ERROR".to_string(),
+                    "Internal server error.".to_string(),
+                    None,
+                ),
             };
 
             Err(ControllerError::BadRequest(error_response))
@@ -91,20 +80,16 @@ pub async fn login_user_handler(Json(payload): Json<LoginRequest>) -> Result<imp
         Err(e) => {
             error!("Error logging in: {}", e);
             let error_response = match e {
-                LoginError::InvalidCredentials => ErrorResponse {
-                    error: ErrorDetail {
-                        code: "INVALID_CREDENTIALS".to_string(),
-                        message: "Email or password is incorrect.".to_string(),
-                        field: Some("email".to_string()),
-                    },
-                },
-                _ => ErrorResponse {
-                    error: ErrorDetail {
-                        code: "INTERNAL_SERVER_ERROR".to_string(),
-                        message: "Internal server error.".to_string(),
-                        field: None,
-                    },
-                },
+                LoginError::InvalidCredentials => ErrorResponse::new(
+                    "INVALID_CREDENTIALS".to_string(),
+                    "Email or password is incorrect.".to_string(),
+                    Some("email".to_string()),
+                ),
+                _ => ErrorResponse::new(
+                    "INTERNAL_SERVER_ERROR".to_string(),
+                    "Internal server error.".to_string(),
+                    None,
+                ),
             };
 
             Err(ControllerError::BadRequest(error_response))
