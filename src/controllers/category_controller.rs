@@ -17,7 +17,7 @@ pub struct CategoryResponse {
 pub async fn get_categories() -> Result<Json<Vec<CategoryResponse>>, ControllerError> {
     info!("Fetching all categories...");
 
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap();
     info!("Database connection established.");
 
     let categories = tokio::task::spawn_blocking(move || {

@@ -10,7 +10,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 use axum::{serve, Router};
 use env_logger::init as log_init;
-use log::info;
+use log::{info, warn};
 use tokio::net::TcpListener;
 use crate::services::category_service::CategoryService;
 use crate::utils::{challenge_loader, clone_or_update_repository, get_db_connection};
@@ -39,7 +39,9 @@ async fn init_git() {
 async fn populate_categories() {
     let base_path = env::var("BASE_PATH").expect("BASE_PATH must be set in the environment");
     let repo_path = Path::new(&base_path);
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap_or_else(|e| {
+        std::process::exit(1);
+    });
 
     for entry in walkdir::WalkDir::new(repo_path) {
         let entry = entry.expect("Failed to read directory entry");

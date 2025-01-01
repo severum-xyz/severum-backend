@@ -20,7 +20,7 @@ struct ChallengeDetails {
 }
 
 pub async fn load_challenges_from_repo(repo_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap();
 
     for entry in walkdir::WalkDir::new(repo_path) {
         let entry = entry?;

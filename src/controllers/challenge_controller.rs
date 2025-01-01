@@ -38,7 +38,7 @@ pub struct ChallengeResponse {
 pub async fn get_challenges() -> Result<Json<Vec<ChallengeResponse>>, ControllerError> {
     info!("Fetching all challenges...");
 
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap();
     info!("Database connection established.");
 
     let challenges_list = tokio::task::spawn_blocking(move || {

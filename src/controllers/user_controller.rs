@@ -32,7 +32,7 @@ pub struct LoginResponse {
 }
 
 pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl IntoResponse, ControllerError> {
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap();
 
     match UserService::create_user(&mut conn, &payload).await {
         Ok(_) => {
@@ -67,7 +67,7 @@ pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl 
 }
 
 pub async fn login_user_handler(Json(payload): Json<LoginRequest>) -> Result<impl IntoResponse, ControllerError> {
-    let mut conn = get_db_connection().await;
+    let mut conn = get_db_connection().await.unwrap();
 
     match UserService::login_user(&mut conn, &payload).await {
         Ok(token) => {
