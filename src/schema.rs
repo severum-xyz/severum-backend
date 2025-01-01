@@ -4,9 +4,7 @@ diesel::table! {
     categories (id) {
         id -> Int4,
         #[max_length = 255]
-        name -> Varchar,
-        description -> Text,
-        created_at -> Timestamp,
+        name -> Varchar
     }
 }
 
