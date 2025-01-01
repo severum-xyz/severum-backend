@@ -21,7 +21,7 @@ pub struct ErrorDetail {
 #[derive(Debug)]
 pub enum ControllerError {
     BadRequest(ErrorResponse),
-    InternalServerError,
+    InternalServerError(ErrorResponse),
 }
 
 impl IntoResponse for ControllerError {
@@ -30,12 +30,7 @@ impl IntoResponse for ControllerError {
             ControllerError::BadRequest(error_response) => {
                 (StatusCode::BAD_REQUEST, Json(error_response)).into_response()
             }
-            ControllerError::InternalServerError => {
-                let error_response = ErrorResponse::new(
-                    "INTERNAL_SERVER_ERROR".to_string(),
-                    "Internal server error.".to_string(),
-                    None,
-                );
+            ControllerError::InternalServerError(error_response) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response)).into_response()
             }
         }
@@ -47,11 +42,5 @@ impl ErrorResponse {
         Self {
             error: ErrorDetail { code, message, field },
         }
-    }
-}
-
-impl ErrorDetail {
-    pub fn new(code: String, message: String, field: Option<String>) -> Self {
-        Self { code, message, field }
     }
 }
