@@ -1,47 +1,45 @@
-/*
-use crate::models::challenge::ChallengeMetadata;
-use std::fs;
 use std::path::Path;
-use log::{debug, error, info};
+use serde::Deserialize;
+use crate::services::category_service::CategoryService;
+use crate::services::challenge_service::ChallengeService;
+use crate::utils::get_db_connection;
 
-pub fn load_challenges(base_path: &str) -> Vec<ChallengeMetadata> {
-    info!("Loading challenges from base path: {}", base_path);
-    let base_dir = Path::new(base_path);
-    if !base_dir.exists() {
-        error!("Base directory does not exist: {}", base_path);
-        return vec![];
-    }
-
-    let mut challenges = Vec::new();
-    scan_dir(base_dir, &mut challenges, base_path);
-    challenges
+#[derive(Deserialize)]
+struct Metadata {
+    id: String,
+    challenge: ChallengeDetails,
 }
 
-fn scan_dir(dir: &Path, challenges: &mut Vec<ChallengeMetadata>, base_path: &str) {
-    debug!("Scanning directory: {:?}", dir);
-    let Ok(entries) = fs::read_dir(dir) else { return };
-
-    for entry in entries {
-        let Ok(entry) = entry else { continue };
-        let path = entry.path();
-
-        if !path.is_dir() {
-            continue;
-        }
-
-        if path.ends_with("data") {
-            let metadata_path = path.join("metadata.json");
-            let Ok(content) = fs::read_to_string(&metadata_path) else { continue };
-
-            match serde_json::from_str::<ChallengeMetadata>(&content) {
-                Ok(metadata) => {
-                    challenges.push(metadata);
-                }
-                Err(e) => error!("Invalid metadata.json: {}", e),
-            }
-        }
-
-        scan_dir(&path, challenges, base_path);
-    }
+#[derive(Deserialize)]
+struct ChallengeDetails {
+    title: String,
+    category: String,
+    difficulty: String,
+    description: String,
+    hint: Option<String>,
 }
-*/
+
+pub async fn load_challenges_from_repo(repo_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = get_db_connection().await;
+
+    for entry in walkdir::WalkDir::new(repo_path) {
+        let entry = entry?;
+        if entry.file_name() == "metadata.json" {
+            let metadata: Metadata = serde_json::from_str(&std::fs::read_to_string(entry.path())?)?;
+
+            let category_id = CategoryService::find_or_create_category(&mut conn, &metadata.challenge.category).await?;
+
+            ChallengeService::find_or_create_challenge(
+                &mut conn,
+                &metadata.challenge.title,
+                category_id,
+                &metadata.challenge.difficulty,
+                &metadata.challenge.description,
+                metadata.challenge.hint.as_deref(),
+            )
+                .await?;
+        }
+    }
+
+    Ok(())
+}
