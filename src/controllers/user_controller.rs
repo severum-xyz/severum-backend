@@ -48,12 +48,31 @@ pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl 
         }
         Err(e) => {
             error!("Error: {}", e);
-            match e {
-                RegistrationError::EmailAlreadyTaken | RegistrationError::UsernameAlreadyTaken => {
-                    Err(ControllerError::BadRequest(e.to_string()))
-                }
-                _ => Err(ControllerError::InternalServerError),
-            }
+            let error_response = match e {
+                RegistrationError::EmailAlreadyTaken => ErrorResponse {
+                    error: ErrorDetail {
+                        code: "EMAIL_ALREADY_TAKEN".to_string(),
+                        message: "Email is already taken.".to_string(),
+                        field: Some("email".to_string()),
+                    },
+                },
+                RegistrationError::UsernameAlreadyTaken => ErrorResponse {
+                    error: ErrorDetail {
+                        code: "USERNAME_ALREADY_TAKEN".to_string(),
+                        message: "Username is already taken.".to_string(),
+                        field: Some("pseudo".to_string()),
+                    },
+                },
+                _ => ErrorResponse {
+                    error: ErrorDetail {
+                        code: "INTERNAL_SERVER_ERROR".to_string(),
+                        message: "Internal server error.".to_string(),
+                        field: None,
+                    },
+                },
+            };
+
+            Err(ControllerError::BadRequest(error_response))
         }
     }
 }
@@ -71,12 +90,24 @@ pub async fn login_user_handler(Json(payload): Json<LoginRequest>) -> Result<imp
         }
         Err(e) => {
             error!("Error logging in: {}", e);
-            match e {
-                LoginError::InvalidCredentials => {
-                    Err(ControllerError::BadRequest("Email or password is incorrect".to_string()))
-                }
-                _ => Err(ControllerError::InternalServerError),
-            }
+            let error_response = match e {
+                LoginError::InvalidCredentials => ErrorResponse {
+                    error: ErrorDetail {
+                        code: "INVALID_CREDENTIALS".to_string(),
+                        message: "Email or password is incorrect.".to_string(),
+                        field: Some("email".to_string()),
+                    },
+                },
+                _ => ErrorResponse {
+                    error: ErrorDetail {
+                        code: "INTERNAL_SERVER_ERROR".to_string(),
+                        message: "Internal server error.".to_string(),
+                        field: None,
+                    },
+                },
+            };
+
+            Err(ControllerError::BadRequest(error_response))
         }
     }
 }
