@@ -1,7 +1,5 @@
 -- Your SQL goes here
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) UNIQUE NOT NULL,
-    description TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    name VARCHAR(255) UNIQUE NOT NULL
 );
