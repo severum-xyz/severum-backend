@@ -1,11 +1,11 @@
-use axum::Json;
+use axum::{Json, Extension};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use log::{info, error};
 use crate::services::user_service::UserService;
 use crate::controllers::errors::{ControllerError, ErrorResponse};
 use crate::models::errors::{LoginError, RegistrationError};
-use crate::utils::get_db_connection;
+use crate::utils::DbPool;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -31,10 +31,11 @@ pub struct LoginResponse {
     pub token: String,
 }
 
-pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl IntoResponse, ControllerError> {
-    let mut conn = get_db_connection().await.unwrap();
-
-    match UserService::create_user(&mut conn, &payload).await {
+pub async fn register_user(
+    Extension(pool): Extension<DbPool>,
+    Json(payload): Json<RegisterRequest>
+) -> Result<impl IntoResponse, ControllerError> {
+    match UserService::create_user(&pool, &payload).await {
         Ok(_) => {
             info!("User {} registered successfully.", payload.email);
             Ok(Json(RegisterResponse {
@@ -66,33 +67,28 @@ pub async fn register_user(Json(payload): Json<RegisterRequest>) -> Result<impl 
     }
 }
 
-pub async fn login_user_handler(Json(payload): Json<LoginRequest>) -> Result<impl IntoResponse, ControllerError> {
-    let mut conn = get_db_connection().await.unwrap();
+pub async fn login_user_handler(
+    Extension(pool): Extension<DbPool>,
+    Json(payload): Json<LoginRequest>
+) -> Result<Json<LoginResponse>, ControllerError> {
+    let token = UserService::login_user(&pool, &payload).await.map_err(|e| {
+        let error_response = match e {
+            LoginError::InvalidCredentials => ErrorResponse::new(
+                "INVALID_CREDENTIALS".to_string(),
+                "Email or password is incorrect.".to_string(),
+                Some("email".to_string()),
+            ),
+            _ => ErrorResponse::new(
+                "INTERNAL_SERVER_ERROR".to_string(),
+                "Internal server error.".to_string(),
+                None,
+            ),
+        };
+        ControllerError::BadRequest(error_response)
+    })?;
 
-    match UserService::login_user(&mut conn, &payload).await {
-        Ok(token) => {
-            info!("User {} logged in successfully.", payload.email);
-            Ok(Json(LoginResponse {
-                message: "User logged in successfully.".to_string(),
-                token,
-            }))
-        }
-        Err(e) => {
-            error!("Error logging in: {}", e);
-            let error_response = match e {
-                LoginError::InvalidCredentials => ErrorResponse::new(
-                    "INVALID_CREDENTIALS".to_string(),
-                    "Email or password is incorrect.".to_string(),
-                    Some("email".to_string()),
-                ),
-                _ => ErrorResponse::new(
-                    "INTERNAL_SERVER_ERROR".to_string(),
-                    "Internal server error.".to_string(),
-                    None,
-                ),
-            };
-
-            Err(ControllerError::BadRequest(error_response))
-        }
-    }
+    Ok(Json(LoginResponse {
+        message: "User logged in successfully.".to_string(),
+        token,
+    }))
 }
