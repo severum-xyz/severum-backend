@@ -1,40 +1,72 @@
-use diesel::prelude::*;
-use diesel::result::Error;
+use sqlx::{PgPool, Error};
 use log::info;
 use crate::models::challenge::{Challenge, NewChallenge};
-use crate::schema::challenges;
-use crate::schema::challenges::{category_id, name};
 
 pub struct ChallengeRepository;
 
 impl ChallengeRepository {
-    pub async fn insert_challenge(conn: &mut PgConnection, new_challenge: &NewChallenge<'_>) -> Result<(), Error> {
+    pub async fn insert_challenge(pool: &PgPool, new_challenge: &NewChallenge<'_>) -> Result<i32, Error> {
         info!("Creating new challenge: {}", new_challenge.name);
-        diesel::insert_into(challenges::table)
-            .values(new_challenge)
-            .execute(conn)?;
-        info!("Challenge created successfully: {}", new_challenge.name);
-        Ok(())
+
+        let row: (i32,) = sqlx::query_as(
+            r#"
+            INSERT INTO challenges (category_id, name, difficulty, description, hint)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+            "#
+        )
+            .bind(new_challenge.category_id)
+            .bind(new_challenge.name)
+            .bind(new_challenge.difficulty)
+            .bind(new_challenge.description)
+            .bind(new_challenge.hint)
+            .fetch_one(pool)
+            .await?;
+
+        info!("Challenge created successfully with ID: {}", row.0);
+        Ok(row.0)
     }
 
-    pub async fn delete_challenge(conn: &mut PgConnection, challenge_id: i32) -> Result<(), Error> {
-        diesel::delete(challenges::table.find(challenge_id))
-            .execute(conn)?;
+    pub async fn delete_challenge(pool: &PgPool, challenge_id: i32) -> Result<(), Error> {
+        sqlx::query(
+            r#"
+            DELETE FROM challenges WHERE id = $1
+            "#
+        )
+            .bind(challenge_id)
+            .execute(pool)
+            .await?;
+
+        info!("Challenge with ID {} deleted successfully", challenge_id);
         Ok(())
     }
 
     pub async fn find_challenge_by_name_and_category_id(
-        conn: &mut PgConnection,
+        pool: &PgPool,
         challenge_name: &str,
         challenge_category_id: i32,
     ) -> Result<Option<Challenge>, Error> {
-        challenges::table
-            .filter(name.eq(challenge_name).and(category_id.eq(challenge_category_id)))
-            .first::<Challenge>(conn)
-            .optional()
+        sqlx::query_as::<_, Challenge>(
+            r#"
+            SELECT id, category_id, name, difficulty, description, hint, created_at
+            FROM challenges
+            WHERE name = $1 AND category_id = $2
+            "#
+        )
+            .bind(challenge_name)
+            .bind(challenge_category_id)
+            .fetch_optional(pool)
+            .await
     }
 
-    pub fn get_all_challenges(conn: &mut PgConnection) -> Result<Vec<Challenge>, Error> {
-        challenges::table.load::<Challenge>(conn)
+    pub async fn get_all_challenges(pool: &PgPool) -> Result<Vec<Challenge>, Error> {
+        sqlx::query_as::<_, Challenge>(
+            r#"
+            SELECT id, category_id, name, difficulty, description, hint, created_at
+            FROM challenges
+            "#
+        )
+            .fetch_all(pool)
+            .await
     }
 }
