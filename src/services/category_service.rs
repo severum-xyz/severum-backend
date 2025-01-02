@@ -1,27 +1,24 @@
-use diesel::PgConnection;
-use diesel::result::Error;
-use crate::models::category::{Category, NewCategory};
+use sqlx::PgPool;
+use crate::models::category::Category;
 use crate::repositories::category_repository::CategoryRepository;
 
 pub struct CategoryService;
 
 impl CategoryService {
-    pub async fn find_or_create_category(conn: &mut PgConnection, category_name: &str) -> Result<i32, Error> {
-        let category = CategoryRepository::find_category_by_name(conn, category_name).await?;
-
-        match category {
-            Some(category) => Ok(category.id),
-            None => {
-                let new_category = NewCategory { name: category_name };
-                CategoryRepository::insert_category(conn, &new_category).await?;
-
-                let category = CategoryRepository::find_category_by_name(conn, category_name).await?.unwrap();
-                Ok(category.id)
-            }
-        }
+    pub async fn get_all_categories(pool: &PgPool) -> Result<Vec<Category>, sqlx::Error> {
+        CategoryRepository::get_all_categories(pool).await
     }
 
-    pub fn get_all_categories(conn: &mut PgConnection) -> Result<Vec<Category>, Error> {
-        CategoryRepository::get_all_categories(conn)
+    pub async fn find_or_create_category(pool: &PgPool, category_name: &str) -> Result<Category, sqlx::Error> {
+        if let Some(category) = CategoryRepository::find_category_by_name(pool, category_name).await? {
+            return Ok(category);
+        }
+
+        let category_id = CategoryRepository::insert_category(pool, category_name).await?;
+
+        Ok(Category {
+            id: category_id,
+            name: category_name.to_string(),
+        })
     }
 }
