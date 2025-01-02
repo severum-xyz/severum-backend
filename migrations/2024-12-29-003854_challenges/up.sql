@@ -8,3 +8,4 @@ CREATE TABLE IF NOT EXISTS challenges (
     hint TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
