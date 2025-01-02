@@ -1,29 +1,19 @@
-use axum::{Json, response::IntoResponse};
-use std::path::Path;
+use axum::{Json, response::IntoResponse, Extension};
 use log::{error, info};
 use serde::Serialize;
 
 use crate::{
-    utils::{challenge_loader, get_db_connection},
     controllers::errors::{ControllerError, ErrorResponse},
     services::challenge_service::ChallengeService,
+    utils::DbPool,
+    utils::loader::Loader,
 };
 
-pub async fn load_challenges() -> Result<impl IntoResponse, ControllerError> {
-    let repo_path = Path::new("/tmp/severum-challenges");
-
-    match challenge_loader::load_challenges_from_repo(repo_path).await {
-        Ok(_) => Ok(Json("Challenges loaded successfully.")),
-        Err(e) => {
-            let error_response = ErrorResponse::new(
-                "INTERNAL_SERVER_ERROR".to_string(),
-                format!("Failed to load challenges: {}", e),
-                None,
-            );
-            Err(ControllerError::BadRequest(error_response))
-        }
-    }
+pub async fn load_challenges(Extension(pool): Extension<DbPool>) -> Result<impl IntoResponse, ControllerError> {
+    Loader::load_challenges(&pool).await;
+    Ok(Json("Challenges loaded successfully."))
 }
+
 
 #[derive(Serialize)]
 pub struct ChallengeResponse {
@@ -35,34 +25,18 @@ pub struct ChallengeResponse {
     hint: Option<String>,
 }
 
-pub async fn get_challenges() -> Result<Json<Vec<ChallengeResponse>>, ControllerError> {
+pub async fn get_challenges(Extension(pool): Extension<DbPool>) -> Result<Json<Vec<ChallengeResponse>>, ControllerError> {
     info!("Fetching all challenges...");
 
-    let mut conn = get_db_connection().await.unwrap();
-    info!("Database connection established.");
-
-    let challenges_list = tokio::task::spawn_blocking(move || {
-        ChallengeService::get_all_challenges(&mut conn)
-    })
-        .await
-        .map_err(|e| {
-            error!("Internal server error: {}", e);
-            let error_response = ErrorResponse::new(
-                "INTERNAL_SERVER_ERROR".to_string(),
-                "Failed to fetch challenges".to_string(),
-                None,
-            );
-            ControllerError::InternalServerError(error_response)
-        })?
-        .map_err(|e| {
-            error!("Database error: {}", e);
-            let error_response = ErrorResponse::new(
-                "DATABASE_ERROR".to_string(),
-                "Failed to fetch challenges".to_string(),
-                None,
-            );
-            ControllerError::InternalServerError(error_response)
-        })?;
+    let challenges_list = ChallengeService::get_all_challenges(&pool).await.map_err(|e| {
+        error!("Database error: {}", e);
+        let error_response = ErrorResponse::new(
+            "DATABASE_ERROR".to_string(),
+            "Failed to fetch challenges".to_string(),
+            None,
+        );
+        ControllerError::InternalServerError(error_response)
+    })?;
 
     let response = challenges_list
         .into_iter()
