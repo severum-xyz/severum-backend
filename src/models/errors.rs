@@ -1,7 +1,7 @@
-use diesel::result::Error;
+use sqlx::Error as SqlxError;
 use jsonwebtoken::errors::Error as JwtError;
-use log::error;
 use thiserror::Error;
+use log::error;
 
 #[derive(Error, Debug)]
 pub enum RegistrationError {
@@ -24,15 +24,15 @@ pub enum LoginError {
     InternalError,
 }
 
-impl From<Error> for RegistrationError {
-    fn from(e: Error) -> Self {
+impl From<SqlxError> for RegistrationError {
+    fn from(e: SqlxError) -> Self {
         error!("Database error: {:?}", e);
         RegistrationError::InternalError
     }
 }
 
-impl From<Error> for LoginError {
-    fn from(e: Error) -> Self {
+impl From<SqlxError> for LoginError {
+    fn from(e: SqlxError) -> Self {
         error!("Database error: {:?}", e);
         LoginError::InternalError
     }
