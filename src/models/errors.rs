@@ -44,3 +44,35 @@ impl From<JwtError> for LoginError {
         LoginError::InternalError
     }
 }
+
+#[derive(Debug)]
+pub enum LoaderError {
+    WalkDirError(walkdir::Error),
+    IoError(std::io::Error),
+    JsonError(serde_json::Error),
+    DatabaseError(sqlx::Error),
+}
+
+impl From<walkdir::Error> for LoaderError {
+    fn from(err: walkdir::Error) -> Self {
+        LoaderError::WalkDirError(err)
+    }
+}
+
+impl From<std::io::Error> for LoaderError {
+    fn from(err: std::io::Error) -> Self {
+        LoaderError::IoError(err)
+    }
+}
+
+impl From<serde_json::Error> for LoaderError {
+    fn from(err: serde_json::Error) -> Self {
+        LoaderError::JsonError(err)
+    }
+}
+
+impl From<sqlx::Error> for LoaderError {
+    fn from(err: sqlx::Error) -> Self {
+        LoaderError::DatabaseError(err)
+    }
+}

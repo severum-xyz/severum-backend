@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 use log::{info, error};
 use serde::Deserialize;
 use walkdir::WalkDir;
+use crate::models::challenge::Challenge;
+use crate::models::errors::LoaderError;
 use crate::services::{category_service::CategoryService, challenge_service::ChallengeService};
 use crate::utils::{clone_or_update_repository, db::DbPool};
 
@@ -74,51 +76,37 @@ impl Loader {
         }
     }
 
-    pub async fn load_challenges(pool: &DbPool) {
+    pub async fn load_challenges(pool: &DbPool) -> Result<Vec<Challenge>, LoaderError> {
         let base_path = std::env::var("BASE_PATH").expect("BASE_PATH must be set in the environment");
         let repo_path = Path::new(&base_path);
+        let mut loaded_challenges = Vec::new();
 
         for entry in WalkDir::new(repo_path) {
-            let entry = match entry {
-                Ok(entry) => entry,
-                Err(e) => {
-                    error!("Failed to read directory entry: {}", e);
-                    continue;
-                }
-            };
+            let entry = entry?;
 
             if entry.file_name() == "metadata.json" {
-                match std::fs::read_to_string(entry.path()) {
-                    Ok(content) => {
-                        if let Ok(metadata) = serde_json::from_str::<Metadata>(&content) {
-                            let category_id = match CategoryService::find_or_create_category(pool, &metadata.challenge.category).await {
-                                Ok(category) => category.id,
-                                Err(e) => {
-                                    error!("Failed to find or create category '{}': {}", metadata.challenge.category, e);
-                                    continue;
-                                }
-                            };
+                let content = std::fs::read_to_string(entry.path())?;
+                let metadata: Metadata = serde_json::from_str(&content)?;
 
-                            match ChallengeService::find_or_create_challenge(
-                                pool,
-                                &metadata.challenge.title,
-                                category_id,
-                                &metadata.challenge.difficulty,
-                                &metadata.challenge.description,
-                                metadata.challenge.hint.as_deref(),
-                            ).await {
-                                Ok(_) => info!("Challenge '{}' loaded.", metadata.challenge.title),
-                                Err(e) => error!("Failed to create challenge '{}': {}", metadata.challenge.title, e),
-                            }
-                        } else {
-                            error!("Failed to parse metadata.json: {:?}", entry.path());
-                        }
-                    }
-                    Err(e) => {
-                        error!("Failed to read metadata.json: {}", e);
-                    }
-                }
+                let category = CategoryService::find_or_create_category(
+                    pool,
+                    &metadata.challenge.category
+                ).await?;
+
+                let challenge = ChallengeService::find_or_create_challenge(
+                    pool,
+                    &metadata.challenge.title,
+                    category.id,
+                    &metadata.challenge.difficulty,
+                    &metadata.challenge.description,
+                    metadata.challenge.hint.as_deref(),
+                ).await?;
+
+                info!("Challenge '{}' loaded.", metadata.challenge.title);
+                loaded_challenges.push(challenge);
             }
         }
+
+        Ok(loaded_challenges)
     }
 }

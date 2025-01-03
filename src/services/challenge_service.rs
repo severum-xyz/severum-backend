@@ -16,9 +16,9 @@ impl ChallengeService {
         difficulty: &str,
         description: &str,
         hint: Option<&str>,
-    ) -> Result<i32, sqlx::Error> {
+    ) -> Result<Challenge, sqlx::Error> {
         match ChallengeRepository::find_challenge_by_name_and_category_id(pool, challenge_name, category_id).await? {
-            Some(existing_challenge) => Ok(existing_challenge.id),
+            Some(existing_challenge) => Ok(existing_challenge),
             None => {
                 let new_challenge = NewChallenge {
                     category_id,
@@ -27,7 +27,10 @@ impl ChallengeService {
                     description,
                     hint,
                 };
-                ChallengeRepository::insert_challenge(pool, &new_challenge).await
+                let challenge_id = ChallengeRepository::insert_challenge(pool, &new_challenge).await?;
+                let challenge = ChallengeRepository::find_challenge_by_id(pool, challenge_id).await?
+                    .ok_or_else(|| sqlx::Error::RowNotFound)?;
+                Ok(challenge)
             }
         }
     }
