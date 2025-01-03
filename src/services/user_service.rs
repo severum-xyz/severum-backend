@@ -11,6 +11,9 @@ use crate::models::errors::{LoginError, RegistrationError};
 use sqlx::PgPool;
 use crate::repositories::user_repository::UserRepository;
 
+const TOKEN_EXPIRATION_SECONDS: u64 = 86400; // 1 day
+const SALT_LENGTH: usize = 32;
+
 #[derive(Debug, Deserialize, Serialize)]
 struct Claims {
     sub: String,
@@ -29,13 +32,13 @@ impl UserService {
             password_hash: &password_hash,
         };
 
-        Self::insert_new_user(pool, &new_user).await?;
+        Self::ensure_email_and_pseudo_unique(pool, &new_user).await?;
+        UserRepository::insert_new_user(pool, &new_user).await?;
         Ok(())
     }
 
     pub async fn login_user(pool: &PgPool, payload: &LoginRequest) -> Result<String, LoginError> {
         let jwt_secret = env::var("JWT_SECRET").map_err(|_| LoginError::InternalError)?;
-
         let user = UserRepository::find_user_by_email(pool, &payload.email)
             .await?
             .ok_or(LoginError::InvalidCredentials)?;
@@ -44,39 +47,33 @@ impl UserService {
             return Err(LoginError::InvalidCredentials);
         }
 
-        let claims = Claims {
-            sub: user.email.clone(),
-            exp: (SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs() + 86400) as usize,
-        };
-
-        encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(jwt_secret.as_ref()),
-        )
+        let claims = Self::generate_claims(&user.email);
+        encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
             .map_err(|_| LoginError::InternalError)
     }
 
-    async fn insert_new_user(pool: &PgPool, new_user: &NewUser<'_>) -> Result<(), RegistrationError> {
-        let email_exists = UserRepository::email_exists(pool, new_user.email).await?;
-        let pseudo_exists = UserRepository::pseudo_exists(pool, new_user.pseudo).await?;
-
-        if email_exists {
+    async fn ensure_email_and_pseudo_unique(pool: &PgPool, new_user: &NewUser<'_>) -> Result<(), RegistrationError> {
+        if UserRepository::email_exists(pool, new_user.email).await? {
             return Err(RegistrationError::EmailAlreadyTaken);
         }
-        if pseudo_exists {
+        if UserRepository::pseudo_exists(pool, new_user.pseudo).await? {
             return Err(RegistrationError::UsernameAlreadyTaken);
         }
-
-        UserRepository::insert_new_user(pool, new_user).await?;
         Ok(())
     }
 
-    fn generate_salt() -> [u8; 32] {
-        let mut salt = [0u8; 32];
+    fn generate_claims(email: &str) -> Claims {
+        Claims {
+            sub: email.to_string(),
+            exp: (SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() + TOKEN_EXPIRATION_SECONDS) as usize,
+        }
+    }
+
+    fn generate_salt() -> [u8; SALT_LENGTH] {
+        let mut salt = [0u8; SALT_LENGTH];
         OsRng.fill_bytes(&mut salt);
         salt
     }
