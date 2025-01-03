@@ -4,7 +4,7 @@ use argon2::{self, Config};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use rand::{RngCore};
 use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
+use crate::models::claims::Claims;
 use crate::controllers::user_controller::{LoginRequest, RegisterRequest};
 use crate::models::user::NewUser;
 use crate::models::errors::{LoginError, RegistrationError};
@@ -13,12 +13,6 @@ use crate::repositories::user_repository::UserRepository;
 
 const TOKEN_EXPIRATION_SECONDS: u64 = 86400; // 1 day
 const SALT_LENGTH: usize = 32;
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Claims {
-    sub: String,
-    exp: usize,
-}
 
 pub struct UserService;
 
