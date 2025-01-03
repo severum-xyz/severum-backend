@@ -1,7 +1,8 @@
 use sqlx::FromRow;
 use chrono::NaiveDateTime;
+use serde::Serialize;
 
-#[derive(Debug, FromRow)]
+#[derive(Serialize, Debug, FromRow)]
 pub struct Challenge {
     pub id: i32,
     pub category_id: i32,
