@@ -36,27 +36,28 @@ impl UserService {
     pub async fn login_user(pool: &PgPool, payload: &LoginRequest) -> Result<String, LoginError> {
         let jwt_secret = env::var("JWT_SECRET").map_err(|_| LoginError::InternalError)?;
 
-        let user = UserRepository::find_user_by_email(pool, &payload.email).await?;
+        let user = UserRepository::find_user_by_email(pool, &payload.email)
+            .await?
+            .ok_or(LoginError::InvalidCredentials)?;
 
-        match user {
-            Some(u) if Self::verify_password(&payload.password, &u.password_hash) => {
-                let claims = Claims {
-                    sub: u.email.clone(),
-                    exp: (SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs() + 86400) as usize,
-                };
-
-                encode(
-                    &Header::default(),
-                    &claims,
-                    &EncodingKey::from_secret(jwt_secret.as_ref()),
-                )
-                    .map_err(|_| LoginError::InternalError)
-            }
-            _ => Err(LoginError::InvalidCredentials),
+        if !Self::verify_password(&payload.password, &user.password_hash) {
+            return Err(LoginError::InvalidCredentials);
         }
+
+        let claims = Claims {
+            sub: user.email.clone(),
+            exp: (SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() + 86400) as usize,
+        };
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(jwt_secret.as_ref()),
+        )
+            .map_err(|_| LoginError::InternalError)
     }
 
     async fn insert_new_user(pool: &PgPool, new_user: &NewUser<'_>) -> Result<(), RegistrationError> {
