@@ -1988,6 +1988,7 @@ dependencies = [
  "sqlx",
  "thiserror 2.0.9",
  "tokio",
+ "tower",
  "tower-http",
  "urlencoding",
  "uuid",
