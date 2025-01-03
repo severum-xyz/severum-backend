@@ -19,7 +19,7 @@ pub struct ChallengeResponse {
 }
 
 pub async fn load_challenges(Extension(pool): Extension<DbPool>) -> Result<impl IntoResponse, ControllerError> {
-    Loader::load_challenges(&pool).await.map_err(|e| {
+    let challenges = Loader::load_challenges(&pool).await.map_err(|e| {
         error!("Error loading challenges: {:?}", e);
         ControllerError::InternalServerError(ErrorResponse::new(
             "LOADER_ERROR".to_string(),
@@ -28,7 +28,8 @@ pub async fn load_challenges(Extension(pool): Extension<DbPool>) -> Result<impl 
         ))
     })?;
 
-    Ok(Json("Challenges loaded successfully."))
+    info!("Challenges loaded successfully.");
+    Ok(Json(challenges))
 }
 
 pub async fn get_challenges(Extension(pool): Extension<DbPool>) -> Result<Json<Vec<ChallengeResponse>>, ControllerError> {
