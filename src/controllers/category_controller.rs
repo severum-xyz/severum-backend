@@ -4,8 +4,8 @@ use log::{info, error};
 use crate::{
     services::category_service::CategoryService,
     controllers::errors::{ControllerError, ErrorResponse},
+    utils::db::DbPool,
 };
-use crate::utils::db::DbPool;
 
 #[derive(Serialize)]
 pub struct CategoryResponse {
@@ -19,13 +19,12 @@ pub async fn get_categories(
     info!("Fetching all categories...");
 
     let categories = CategoryService::get_all_categories(&pool).await.map_err(|e| {
-        error!("Database error: {}", e);
-        let error_response = ErrorResponse::new(
+        error!("Database error: {:?}", e);
+        ControllerError::InternalServerError(ErrorResponse::new(
             "DATABASE_ERROR".to_string(),
             "Failed to fetch categories".to_string(),
             None,
-        );
-        ControllerError::InternalServerError(error_response)
+        ))
     })?;
 
     let response = categories
@@ -34,7 +33,7 @@ pub async fn get_categories(
             id: category.id,
             name: category.name,
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     Ok(Json(response))
 }
