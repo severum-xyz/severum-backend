@@ -59,6 +59,19 @@ impl ChallengeRepository {
             .await
     }
 
+    pub async fn find_challenge_by_id(pool: &PgPool, challenge_id: i32) -> Result<Option<Challenge>, Error> {
+        sqlx::query_as::<_, Challenge>(
+            r#"
+            SELECT id, category_id, name, difficulty, description, hint, created_at
+            FROM challenges
+            WHERE id = $1
+            "#
+        )
+            .bind(challenge_id)
+            .fetch_optional(pool)
+            .await
+    }
+
     pub async fn get_all_challenges(pool: &PgPool) -> Result<Vec<Challenge>, Error> {
         sqlx::query_as::<_, Challenge>(
             r#"
