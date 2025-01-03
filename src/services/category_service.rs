@@ -10,15 +10,15 @@ impl CategoryService {
     }
 
     pub async fn find_or_create_category(pool: &PgPool, category_name: &str) -> Result<Category, sqlx::Error> {
-        if let Some(category) = CategoryRepository::find_category_by_name(pool, category_name).await? {
-            return Ok(category);
+        match CategoryRepository::find_category_by_name(pool, category_name).await? {
+            Some(category) => Ok(category),
+            None => {
+                let category_id = CategoryRepository::insert_category(pool, category_name).await?;
+                Ok(Category {
+                    id: category_id,
+                    name: category_name.to_string(),
+                })
+            }
         }
-
-        let category_id = CategoryRepository::insert_category(pool, category_name).await?;
-
-        Ok(Category {
-            id: category_id,
-            name: category_name.to_string(),
-        })
     }
 }
