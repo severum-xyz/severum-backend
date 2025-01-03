@@ -5,15 +5,8 @@ use serde::Serialize;
 use crate::{
     controllers::errors::{ControllerError, ErrorResponse},
     services::challenge_service::ChallengeService,
-    utils::DbPool,
-    utils::loader::Loader,
+    utils::{DbPool, loader::Loader},
 };
-
-pub async fn load_challenges(Extension(pool): Extension<DbPool>) -> Result<impl IntoResponse, ControllerError> {
-    Loader::load_challenges(&pool).await;
-    Ok(Json("Challenges loaded successfully."))
-}
-
 
 #[derive(Serialize)]
 pub struct ChallengeResponse {
@@ -25,20 +18,32 @@ pub struct ChallengeResponse {
     hint: Option<String>,
 }
 
+pub async fn load_challenges(Extension(pool): Extension<DbPool>) -> Result<impl IntoResponse, ControllerError> {
+    Loader::load_challenges(&pool).await.map_err(|e| {
+        error!("Error loading challenges: {:?}", e);
+        ControllerError::InternalServerError(ErrorResponse::new(
+            "LOADER_ERROR".to_string(),
+            "Failed to load challenges".to_string(),
+            None,
+        ))
+    })?;
+
+    Ok(Json("Challenges loaded successfully."))
+}
+
 pub async fn get_challenges(Extension(pool): Extension<DbPool>) -> Result<Json<Vec<ChallengeResponse>>, ControllerError> {
     info!("Fetching all challenges...");
 
-    let challenges_list = ChallengeService::get_all_challenges(&pool).await.map_err(|e| {
-        error!("Database error: {}", e);
-        let error_response = ErrorResponse::new(
+    let challenges = ChallengeService::get_all_challenges(&pool).await.map_err(|e| {
+        error!("Database error: {:?}", e);
+        ControllerError::InternalServerError(ErrorResponse::new(
             "DATABASE_ERROR".to_string(),
             "Failed to fetch challenges".to_string(),
             None,
-        );
-        ControllerError::InternalServerError(error_response)
+        ))
     })?;
 
-    let response = challenges_list
+    let response = challenges
         .into_iter()
         .map(|challenge| ChallengeResponse {
             id: challenge.id,
@@ -48,7 +53,7 @@ pub async fn get_challenges(Extension(pool): Extension<DbPool>) -> Result<Json<V
             description: challenge.description,
             hint: challenge.hint,
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     Ok(Json(response))
 }
