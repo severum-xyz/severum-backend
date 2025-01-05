@@ -41,7 +41,7 @@ impl UserService {
             return Err(LoginError::InvalidCredentials);
         }
 
-        let claims = Self::generate_claims(&user.email);
+        let claims = Self::generate_claims(&user.id);
         encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
             .map_err(|_| LoginError::InternalError)
     }
@@ -56,9 +56,9 @@ impl UserService {
         Ok(())
     }
 
-    fn generate_claims(email: &str) -> Claims {
+    fn generate_claims(user_identifier: &i32) -> Claims {
         Claims {
-            sub: email.to_string(),
+            sub: user_identifier.to_string(),
             exp: (SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
