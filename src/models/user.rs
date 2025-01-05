@@ -11,8 +11,8 @@ pub struct User {
     pub verified: Option<bool>,
 }
 
-pub struct NewUser<'a> {
-    pub email: &'a str,
-    pub username: &'a str,
-    pub password_hash: &'a str,
+pub struct NewUser {
+    pub email: String,
+    pub username: String,
+    pub password_hash: String,
 }

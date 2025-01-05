@@ -6,6 +6,6 @@ pub struct Category {
     pub name: String,
 }
 
-pub struct NewCategory<'a> {
-    pub name: &'a str,
+pub struct NewCategory {
+    pub name: String,
 }

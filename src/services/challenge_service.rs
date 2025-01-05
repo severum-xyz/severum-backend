@@ -22,12 +22,12 @@ impl ChallengeService {
             None => {
                 let new_challenge = NewChallenge {
                     category_id,
-                    name: challenge_name,
-                    difficulty,
-                    description,
-                    hint,
+                    name: challenge_name.to_string(),
+                    difficulty: difficulty.to_string(),
+                    description: description.to_string(),
+                    hint: hint.map(|s| s.to_string()),
                 };
-                let challenge_id = ChallengeRepository::insert_challenge(pool, &new_challenge).await?;
+                let challenge_id = ChallengeRepository::insert_challenge(pool, new_challenge).await?;
                 let challenge = ChallengeRepository::find_challenge_by_id(pool, challenge_id).await?
                     .ok_or_else(|| sqlx::Error::RowNotFound)?;
                 Ok(challenge)

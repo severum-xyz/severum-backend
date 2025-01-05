@@ -5,7 +5,7 @@ use crate::models::challenge::{Challenge, NewChallenge};
 pub struct ChallengeRepository;
 
 impl ChallengeRepository {
-    pub async fn insert_challenge(pool: &PgPool, new_challenge: &NewChallenge<'_>) -> Result<i32, Error> {
+    pub async fn insert_challenge(pool: &PgPool, new_challenge: NewChallenge) -> Result<i32, Error> {
         info!("Creating new challenge: {}", new_challenge.name);
 
         let row: (i32,) = sqlx::query_as(
