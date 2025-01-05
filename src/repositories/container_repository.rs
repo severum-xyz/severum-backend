@@ -50,19 +50,23 @@ impl ContainerRepository {
             .await
     }
 
-    pub async fn insert_user_container(
+    pub async fn store_user_container(
         pool: &PgPool,
         user_id: i32,
         container_name: Uuid,
+        challenge_id: i32,
+        category_id: i32,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
         r#"
-        INSERT INTO user_containers (user_id, container_name)
-        VALUES ($1, $2)
-        "#
+        INSERT INTO user_containers (user_id, container_name, challenge_id, category_id)
+        VALUES ($1, $2, $3, $4)
+        "#,
     )
             .bind(user_id)
             .bind(container_name)
+            .bind(challenge_id)
+            .bind(category_id)
             .execute(pool)
             .await?;
         Ok(())
