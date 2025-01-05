@@ -4,7 +4,7 @@ use crate::models::user::{NewUser, User};
 pub struct UserRepository;
 
 impl UserRepository {
-    pub async fn insert_new_user(pool: &PgPool, new_user: &NewUser<'_>) -> Result<i32, Error> {
+    pub async fn insert_new_user(pool: &PgPool, new_user: NewUser) -> Result<i32, Error> {
         let row: (i32,) = sqlx::query_as(
             r#"
         INSERT INTO users (email, username, password_hash)

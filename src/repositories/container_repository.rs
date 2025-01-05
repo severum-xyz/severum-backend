@@ -56,20 +56,21 @@ impl ContainerRepository {
         container_name: Uuid,
         challenge_id: i32,
         category_id: i32,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-        r#"
-        INSERT INTO user_containers (user_id, container_name, challenge_id, category_id)
-        VALUES ($1, $2, $3, $4)
-        "#,
-    )
+    ) -> Result<UserContainer, sqlx::Error> {
+        let container = sqlx::query_as::<_, UserContainer>(
+            r#"
+            INSERT INTO user_containers (user_id, container_name, challenge_id, category_id)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, user_id, container_name, challenge_id, category_id, created_at
+            "#,
+        )
             .bind(user_id)
             .bind(container_name)
             .bind(challenge_id)
             .bind(category_id)
-            .execute(pool)
+            .fetch_one(pool)
             .await?;
-        Ok(())
+        Ok(container)
     }
 
 }

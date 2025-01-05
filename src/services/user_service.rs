@@ -21,13 +21,13 @@ impl UserService {
         let password_hash = Self::hash_password(&payload.password)?;
 
         let new_user = NewUser {
-            email: &payload.email,
-            username: &payload.username,
-            password_hash: &password_hash,
+            email: payload.email.clone(),
+            username: payload.username.clone(),
+            password_hash,
         };
 
         Self::ensure_email_and_pseudo_unique(pool, &new_user).await?;
-        UserRepository::insert_new_user(pool, &new_user).await?;
+        UserRepository::insert_new_user(pool, new_user).await?;
         Ok(())
     }
 
@@ -46,11 +46,11 @@ impl UserService {
             .map_err(|_| LoginError::InternalError)
     }
 
-    async fn ensure_email_and_pseudo_unique(pool: &PgPool, new_user: &NewUser<'_>) -> Result<(), RegistrationError> {
-        if UserRepository::email_exists(pool, new_user.email).await? {
+    async fn ensure_email_and_pseudo_unique(pool: &PgPool, new_user: &NewUser) -> Result<(), RegistrationError> {
+        if UserRepository::email_exists(pool, &new_user.email).await? {
             return Err(RegistrationError::EmailAlreadyTaken);
         }
-        if UserRepository::username_exists(pool, new_user.username).await? {
+        if UserRepository::username_exists(pool, &new_user.username).await? {
             return Err(RegistrationError::UsernameAlreadyTaken);
         }
         Ok(())
