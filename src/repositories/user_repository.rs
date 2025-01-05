@@ -7,13 +7,13 @@ impl UserRepository {
     pub async fn insert_new_user(pool: &PgPool, new_user: &NewUser<'_>) -> Result<i32, Error> {
         let row: (i32,) = sqlx::query_as(
             r#"
-        INSERT INTO users (email, pseudo, password_hash)
+        INSERT INTO users (email, username, password_hash)
         VALUES ($1, $2, $3)
         RETURNING id
         "#
         )
             .bind(new_user.email)
-            .bind(new_user.pseudo)
+            .bind(new_user.username)
             .bind(new_user.password_hash)
             .fetch_one(pool)
             .await?;
@@ -24,7 +24,7 @@ impl UserRepository {
     pub async fn find_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User>, Error> {
         sqlx::query_as::<_, User>(
             r#"
-        SELECT id, email, pseudo, password_hash, created_at, verified
+        SELECT id, email, username, password_hash, created_at, verified
         FROM users
         WHERE email = $1
         "#
@@ -51,17 +51,17 @@ impl UserRepository {
         Ok(exists.0)
     }
 
-    pub async fn pseudo_exists(pool: &PgPool, pseudo: &str) -> Result<bool, Error> {
+    pub async fn username_exists(pool: &PgPool, username: &str) -> Result<bool, Error> {
         let exists: (bool,) = sqlx::query_as(
             r#"
         SELECT EXISTS (
             SELECT 1
             FROM users
-            WHERE pseudo = $1
+            WHERE username = $1
         )
         "#
         )
-            .bind(pseudo)
+            .bind(username)
             .fetch_one(pool)
             .await?;
 

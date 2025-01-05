@@ -22,7 +22,7 @@ impl UserService {
 
         let new_user = NewUser {
             email: &payload.email,
-            pseudo: &payload.pseudo,
+            username: &payload.username,
             password_hash: &password_hash,
         };
 
@@ -50,7 +50,7 @@ impl UserService {
         if UserRepository::email_exists(pool, new_user.email).await? {
             return Err(RegistrationError::EmailAlreadyTaken);
         }
-        if UserRepository::pseudo_exists(pool, new_user.pseudo).await? {
+        if UserRepository::username_exists(pool, new_user.username).await? {
             return Err(RegistrationError::UsernameAlreadyTaken);
         }
         Ok(())

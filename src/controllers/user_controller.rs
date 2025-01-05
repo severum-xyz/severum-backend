@@ -11,7 +11,7 @@ use crate::models::errors::{LoginError, RegistrationError};
 #[derive(Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
-    pub pseudo: String,
+    pub username: String,
     pub password: String,
 }
 
