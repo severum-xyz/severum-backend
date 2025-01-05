@@ -33,7 +33,7 @@ impl UserService {
 
     pub async fn login_user(pool: &PgPool, payload: &LoginRequest) -> Result<String, LoginError> {
         let jwt_secret = env::var("JWT_SECRET").map_err(|_| LoginError::InternalError)?;
-        let user = UserRepository::find_user_by_email(pool, &payload.email)
+        let user = UserRepository::find_user_by_username(pool, &payload.username)
             .await?
             .ok_or(LoginError::InvalidCredentials)?;
 

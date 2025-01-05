@@ -22,7 +22,7 @@ pub struct RegisterResponse {
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
+    pub username: String,
     pub password: String,
 }
 
@@ -58,7 +58,7 @@ pub async fn login_user(
     UserService::login_user(&pool, &payload)
         .await
         .map(|token| {
-            info!("User {} logged in successfully.", payload.email);
+            info!("User {} logged in successfully.", payload.username);
             Json(LoginResponse {
                 message: "User logged in successfully.".to_string(),
                 token,
@@ -91,7 +91,7 @@ fn map_login_error(e: LoginError) -> ErrorResponse {
     match e {
         LoginError::InvalidCredentials => ErrorResponse::new(
             "INVALID_CREDENTIALS".to_string(),
-            "Email or password is incorrect.".to_string(),
+            "Invalid username or password.".to_string(),
             None
         ),
         _ => ErrorResponse::new(
