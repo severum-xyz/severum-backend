@@ -69,6 +69,7 @@ async fn run_server(state: Arc<AppState>) {
 
     let protected_routes = Router::new()
         .merge(routes::challenge_routes())
+        .merge(routes::container_routes())
         .layer(middleware::from_fn(jwt_middleware));
 
     let app = public_routes
