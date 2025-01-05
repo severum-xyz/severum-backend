@@ -10,6 +10,7 @@ use axum::body::Body;
 use axum::middleware::Next;
 use jsonwebtoken::errors::Error;
 use log::error;
+use crate::models::claims::Claims;
 
 pub async fn jwt_middleware(req: Request<Body>, next: Next) -> impl IntoResponse {
     let jwt_secret = get_jwt_secret();
@@ -50,8 +51,8 @@ async fn handle_valid_token(token: &str, jwt_secret: &str, mut req: Request<Body
     }
 }
 
-fn decode_token(token: &str, jwt_secret: &str) -> Result<TokenData<Value>, Error> {
-    decode::<Value>(
+fn decode_token(token: &str, jwt_secret: &str) -> Result<TokenData<Claims>, Error> {
+    decode::<Claims>(
         token,
         &DecodingKey::from_secret(jwt_secret.as_bytes()),
         &Validation::default(),
