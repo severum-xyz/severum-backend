@@ -17,7 +17,7 @@ use sqlx::PgPool;
 use tokio::net::TcpListener;
 use crate::middlewares::jwt::jwt_middleware;
 use crate::services::category_service::CategoryService;
-use crate::utils::{clone_or_update_repository, create_db_pool, DbPool};
+use crate::utils::db::create_db_pool;
 use crate::utils::loader::Loader;
 
 pub struct AppState {

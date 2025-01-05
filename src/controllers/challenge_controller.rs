@@ -1,12 +1,10 @@
 use axum::{Json, response::IntoResponse, Extension};
 use log::{error, info};
 use serde::Serialize;
-
-use crate::{
-    controllers::errors::{ControllerError, ErrorResponse},
-    services::challenge_service::ChallengeService,
-    utils::{DbPool, loader::Loader},
-};
+use crate::controllers::errors::{ControllerError, ErrorResponse};
+use crate::services::challenge_service::ChallengeService;
+use crate::utils::db::DbPool;
+use crate::utils::loader::Loader;
 
 #[derive(Serialize)]
 pub struct ChallengeResponse {

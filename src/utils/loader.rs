@@ -5,7 +5,8 @@ use walkdir::WalkDir;
 use crate::models::challenge::Challenge;
 use crate::models::errors::LoaderError;
 use crate::services::{category_service::CategoryService, challenge_service::ChallengeService};
-use crate::utils::{clone_or_update_repository, db::DbPool};
+use crate::utils::db::DbPool;
+use crate::utils::git::clone_or_update_repository;
 
 #[derive(Deserialize)]
 struct Metadata {

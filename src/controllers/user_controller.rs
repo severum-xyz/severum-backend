@@ -7,7 +7,6 @@ use crate::AppState;
 use crate::services::user_service::UserService;
 use crate::controllers::errors::{ControllerError, ErrorResponse};
 use crate::models::errors::{LoginError, RegistrationError};
-use crate::utils::DbPool;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
