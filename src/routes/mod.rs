@@ -27,5 +27,5 @@ pub fn container_routes() -> Router {
         .route("/containers/start", post(start_container))
         .route("/containers/stop", post(stop_container))
         .route("/containers", get(list_containers))
-        .route("/containers/:id", get(inspect_container))
+        .route("/containers/{id}", get(inspect_container))
 }
