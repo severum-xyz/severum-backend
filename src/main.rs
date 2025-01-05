@@ -5,8 +5,6 @@ mod repositories;
 mod services;
 mod controllers;
 mod routes;
-pub mod schema;
-
 use std::env;
 use std::path::{Path, PathBuf};
 use axum::{middleware, serve, Extension, Router};
