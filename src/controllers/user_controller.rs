@@ -1,7 +1,9 @@
+use std::sync::Arc;
 use axum::{Json, Extension};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use log::{info, error};
+use crate::AppState;
 use crate::services::user_service::UserService;
 use crate::controllers::errors::{ControllerError, ErrorResponse};
 use crate::models::errors::{LoginError, RegistrationError};
@@ -31,37 +33,39 @@ pub struct LoginResponse {
     pub token: String,
 }
 
+pub type JsonResponse<T> = Result<Json<T>, ControllerError>;
+
 pub async fn register_user(
-    Extension(pool): Extension<DbPool>,
+    Extension(state): Extension<Arc<AppState>>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<impl IntoResponse, ControllerError> {
-    UserService::create_user(&pool, &payload).await.map(|_| {
-        info!("User {} registered successfully.", payload.email);
-        Json(RegisterResponse {
-            message: "User registered successfully.".to_string(),
+) -> JsonResponse<RegisterResponse> {
+    let pool = &state.db_pool;
+    UserService::create_user(&pool, &payload)
+        .await
+        .map(|_| {
+            info!("User {} registered successfully.", payload.email);
+            Json(RegisterResponse {
+                message: "User registered successfully.".to_string(),
+            })
         })
-    })
-        .map_err(|e| {
-            error!("Error registering user: {}", e);
-            ControllerError::BadRequest(map_registration_error(e))
-        })
+        .map_err(|e| ControllerError::BadRequest(map_registration_error(e)))
 }
 
-pub async fn login_user_handler(
-    Extension(pool): Extension<DbPool>,
+pub async fn login_user(
+    Extension(state): Extension<Arc<AppState>>,
     Json(payload): Json<LoginRequest>,
-) -> Result<Json<LoginResponse>, ControllerError> {
-    UserService::login_user(&pool, &payload).await.map(|token| {
-        info!("User {} logged in successfully.", payload.email);
-        Json(LoginResponse {
-            message: "User logged in successfully.".to_string(),
-            token,
+) -> JsonResponse<LoginResponse> {
+    let pool = &state.db_pool;
+    UserService::login_user(&pool, &payload)
+        .await
+        .map(|token| {
+            info!("User {} logged in successfully.", payload.email);
+            Json(LoginResponse {
+                message: "User logged in successfully.".to_string(),
+                token,
+            })
         })
-    })
-        .map_err(|e| {
-            error!("Error logging in user: {}", e);
-            ControllerError::BadRequest(map_login_error(e))
-        })
+        .map_err(|e| ControllerError::BadRequest(map_login_error(e)))
 }
 
 fn map_registration_error(e: RegistrationError) -> ErrorResponse {
@@ -89,7 +93,7 @@ fn map_login_error(e: LoginError) -> ErrorResponse {
         LoginError::InvalidCredentials => ErrorResponse::new(
             "INVALID_CREDENTIALS".to_string(),
             "Email or password is incorrect.".to_string(),
-            Some("email".to_string()),
+            None
         ),
         _ => ErrorResponse::new(
             "INTERNAL_SERVER_ERROR".to_string(),
