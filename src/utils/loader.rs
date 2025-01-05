@@ -29,7 +29,10 @@ impl Loader {
         dotenv::dotenv().ok();
         Self::init_git().await;
         Self::load_categories(pool).await;
-        Self::load_challenges(pool).await;
+        match Self::load_challenges(pool).await {
+            Ok(challenges) => info!("{} challenges loaded.", challenges.len()),
+            Err(e) => error!("Failed to load challenges"),
+        }
     }
 
     async fn init_git() {
