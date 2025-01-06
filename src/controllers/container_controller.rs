@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::AppState;
 use crate::models::container::UserContainer;
+use crate::models::role::Role;
+use crate::repositories::user_repository::UserRepository;
 use crate::services::container_service::ContainerService;
 
 #[derive(Serialize, Deserialize)]
@@ -47,29 +49,16 @@ pub async fn create_container(
     Json(payload): Json<StartContainerRequest>,
 ) -> Result<Json<UserContainer>, ControllerError> {
     let pool = &state.db_pool;
-    let user_id = claims.sub.parse::<i32>().map_err(|_| {
-        ControllerError::BadRequest(ErrorResponse::new(
-            "INVALID_USER_ID".to_string(),
-            "Invalid user ID in claims".to_string(),
-            None,
-        ))
-    })?;
 
-    let container_name = Uuid::new_v4();
-
-    let container = ContainerRepository::store_user_container(&pool, user_id, container_name, payload.challenge_id, payload .category_id)
-        .await
-        .map_err(|e| {
-            ControllerError::InternalServerError(ErrorResponse::new(
-                "DATABASE_ERROR".to_string(),
-                format!("Failed to store container: {}", e),
-                None,
-            ))
-        })?;
+    let container = ContainerService::create_container(
+        pool,
+        &claims,
+        payload.challenge_id,
+        payload.category_id,
+    ).await?;
 
     Ok(Json(container))
 }
-
 
 pub async fn start_container() -> Result<impl IntoResponse, ControllerError> {
     info!("Starting container...");
