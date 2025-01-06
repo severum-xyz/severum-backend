@@ -9,6 +9,7 @@ pub struct User {
     pub password_hash: String,
     pub created_at: NaiveDateTime,
     pub verified: Option<bool>,
+    pub role_id: i32,
 }
 
 pub struct NewUser {
