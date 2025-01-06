@@ -21,15 +21,15 @@ impl UserRepository {
         Ok(row.0)
     }
 
-    pub async fn find_user_by_username(pool: &PgPool, email: &str) -> Result<Option<User>, Error> {
+    pub async fn find_user_by_username(pool: &PgPool, username: &str) -> Result<Option<User>, Error> {
         sqlx::query_as::<_, User>(
             r#"
         SELECT id, email, username, password_hash, created_at, verified
         FROM users
-        WHERE username = $2
+        WHERE username = $1
         "#
         )
-            .bind(email)
+            .bind(username)
             .fetch_optional(pool)
             .await
     }
