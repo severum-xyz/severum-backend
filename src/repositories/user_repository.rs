@@ -68,4 +68,20 @@ impl UserRepository {
         Ok(exists.0)
     }
 
+    pub async fn get_user_role(
+        pool: &PgPool,
+        user_id: i32,
+    ) -> Result<i32, sqlx::Error> {
+        sqlx::query_scalar::<_, i32>(
+            r#"
+        SELECT role_id
+        FROM users
+        WHERE id = $1
+        "#
+        )
+            .bind(user_id)
+            .fetch_one(pool)
+            .await
+    }
+
 }
