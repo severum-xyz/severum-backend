@@ -18,6 +18,19 @@ impl ContainerRepository {
             .await
     }
 
+    pub async fn get_user_containers(pool: &PgPool, user_id: i32) -> Result<Vec<UserContainer>, sqlx::Error> {
+        sqlx::query_as::<_, UserContainer>(
+            r#"
+        SELECT id, user_id, container_name, created_at
+        FROM user_containers
+        WHERE user_id = $1
+        "#
+        )
+            .bind(user_id)
+            .fetch_all(pool)
+            .await
+    }
+
     pub async fn find_container_by_user_id(
         pool: &PgPool,
         user_id: i32,
