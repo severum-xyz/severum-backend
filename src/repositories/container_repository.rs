@@ -21,7 +21,7 @@ impl ContainerRepository {
     pub async fn get_user_containers(pool: &PgPool, user_id: i32) -> Result<Vec<UserContainer>, sqlx::Error> {
         sqlx::query_as::<_, UserContainer>(
             r#"
-        SELECT id, user_id, container_name, created_at
+        SELECT id, user_id, challenge_id, category_id, container_name, created_at
         FROM user_containers
         WHERE user_id = $1
         "#
