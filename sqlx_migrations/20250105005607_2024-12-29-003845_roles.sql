@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS roles (
 INSERT INTO roles (name)
 VALUES
     ('USER'),
+    ('VIP'),
     ('ADMIN')
 ON CONFLICT (name) DO NOTHING;
