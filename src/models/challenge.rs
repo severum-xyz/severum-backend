@@ -13,10 +13,10 @@ pub struct Challenge {
     pub created_at: NaiveDateTime,
 }
 
-pub struct NewChallenge<'a> {
+pub struct NewChallenge {
     pub category_id: i32,
-    pub name: &'a str,
-    pub difficulty: &'a str,
-    pub description: &'a str,
-    pub hint: Option<&'a str>,
+    pub name: String,
+    pub difficulty: String,
+    pub description: String,
+    pub hint: Option<String>,
 }
