@@ -2,8 +2,20 @@ use std::env;
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
+/// Type alias for a PostgreSQL connection pool.
 pub type DbPool = Pool<Postgres>;
 
+/// Creates a database connection pool using configuration from the environment.
+///
+/// This function uses the `DATABASE_URL` environment variable to establish a connection to the database.
+///
+/// # Returns
+/// A `DbPool` instance for interacting with the database.
+///
+/// # Panics
+/// This function panics if:
+/// * The `DATABASE_URL` environment variable is not set.
+/// * A connection pool cannot be created.
 pub async fn create_db_pool() -> DbPool {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL")
