@@ -1,20 +1,13 @@
 use std::sync::Arc;
-use axum::{Json, response::IntoResponse, Extension};
-use axum::http::StatusCode;
-use bollard::container::CreateContainerOptions;
-use bollard::Docker;
-use log::{info, error};
-use sqlx::PgPool;
-use crate::controllers::errors::{ControllerError, ErrorResponse};
-use crate::repositories::container_repository::ContainerRepository;
-use crate::models::claims::Claims;
-
+use axum::{Extension, Json};
+use axum::response::IntoResponse;
+use log::info;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::AppState;
+use crate::controllers::errors::ControllerError;
+use crate::models::claims::Claims;
 use crate::models::container::UserContainer;
-use crate::models::role::Role;
-use crate::repositories::user_repository::UserRepository;
 use crate::services::container_service::ContainerService;
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +36,15 @@ pub struct StopContainerResponse {
     pub stopped_at: chrono::DateTime<chrono::Utc>,
 }
 
+/// Handles the creation of a new container for a user.
+///
+/// # Arguments
+/// * `state` - Shared application state containing the database pool.
+/// * `claims` - JWT claims of the user.
+/// * `payload` - JSON payload containing challenge and category IDs.
+///
+/// # Returns
+/// A `Result` with the created `UserContainer` or a `ControllerError` if the operation fails.
 pub async fn create_container(
     Extension(state): Extension<Arc<AppState>>,
     Extension(claims): Extension<Claims>,
@@ -60,6 +62,10 @@ pub async fn create_container(
     Ok(Json(container))
 }
 
+/// Handles the starting of a container.
+///
+/// # Returns
+/// A placeholder response indicating the container was started successfully.
 pub async fn start_container() -> Result<impl IntoResponse, ControllerError> {
     info!("Starting container...");
     Ok(Json(StartContainerResponse {
@@ -69,58 +75,12 @@ pub async fn start_container() -> Result<impl IntoResponse, ControllerError> {
     }))
 }
 
-/*
-pub async fn start_container(
-    Extension(docker): Extension<Docker>,          // Docker client
-    Extension(pool): Extension<PgPool>,           // Database pool
-    Extension(claims): Extension<Claims>,         // Extracted JWT claims
-    ExtractJson(payload): ExtractJson<StartContainerRequest>, // JSON payload
-) -> Result<Json<ContainerResponse>, ControllerError> {
-    let user_id = claims.sub.parse::<i32>().unwrap(); // Extract user_id from JWT
-
-    // Validate the challenge_id and category_id
-    validate_challenge(&pool, payload.challenge_id, payload.category_id).await?;
-
-    // Generate a unique name for the container
-    let container_name = Uuid::new_v4();
-
-    // Docker container configuration
-    let config = Config {
-        image: Some("0xmushow/severum:severum-sandbox-0.0.1".to_string()),
-        ..Default::default()
-    };
-
-    // Create the container
-    docker.create_container(
-        Some(CreateContainerOptions {
-            name: container_name.to_string(),
-        }),
-        config,
-    ).await.map_err(|e| {
-        error!("Failed to create container: {}", e);
-        ControllerError::InternalServerError(e.to_string())
-    })?;
-
-    // Start the container
-    docker.start_container(&container_name.to_string(), None).await.map_err(|e| {
-        error!("Failed to start container: {}", e);
-        ControllerError::InternalServerError(e.to_string())
-    })?;
-
-    // Store container details in the database
-    ContainerRepository::insert_user_container(&pool, user_id, container_name, payload.challenge_id, payload.category_id).await?;
-
-    // Return response
-    Ok(Json(ContainerResponse {
-        id: container_name.to_string(),
-        message: "Container started successfully.".to_string(),
-    }))
-}
- */
-
+/// Handles the stopping of a container.
+///
+/// # Returns
+/// A placeholder response indicating the container was stopped successfully.
 pub async fn stop_container() -> Result<impl IntoResponse, ControllerError> {
     info!("Stopping container...");
-    // TODO: Implement container stop logic
     Ok(Json(StopContainerResponse {
         id: "example_container_id".to_string(),
         message: "Container stopped successfully".to_string(),
@@ -131,12 +91,15 @@ pub async fn stop_container() -> Result<impl IntoResponse, ControllerError> {
 #[derive(Serialize)]
 struct ContainerResponse {
     id: String,
-    message: String
+    message: String,
 }
 
+/// Lists all containers.
+///
+/// # Returns
+/// A placeholder response containing a list of containers.
 pub async fn list_containers() -> Result<impl IntoResponse, ControllerError> {
     info!("Listing containers...");
-    // TODO: Implement container listing logic
     Ok(Json(vec![
         ContainerResponse {
             id: "example_container_id".to_string(),
@@ -145,9 +108,12 @@ pub async fn list_containers() -> Result<impl IntoResponse, ControllerError> {
     ]))
 }
 
+/// Inspects a specific container.
+///
+/// # Returns
+/// A placeholder response with container details.
 pub async fn inspect_container() -> Result<impl IntoResponse, ControllerError> {
     info!("Inspecting container...");
-    // TODO: Implement container inspection logic
     Ok(Json(ContainerResponse {
         id: "example_container_id".to_string(),
         message: "Container details retrieved successfully".to_string(),
