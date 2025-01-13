@@ -2,9 +2,18 @@ use sqlx::{PgPool, Error};
 use log::info;
 use crate::models::challenge::{Challenge, NewChallenge};
 
+/// Repository for managing challenges in the database.
 pub struct ChallengeRepository;
 
 impl ChallengeRepository {
+    /// Inserts a new challenge into the `challenges` table.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    /// * `new_challenge` - A `NewChallenge` struct containing details of the challenge to insert.
+    ///
+    /// # Returns
+    /// A `Result` containing the ID of the newly created challenge, or a `sqlx::Error` if the operation fails.
     pub async fn insert_challenge(pool: &PgPool, new_challenge: NewChallenge) -> Result<i32, Error> {
         info!("Creating new challenge: {}", new_challenge.name);
 
@@ -27,6 +36,14 @@ impl ChallengeRepository {
         Ok(row.0)
     }
 
+    /// Deletes a challenge from the `challenges` table by its ID.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    /// * `challenge_id` - The ID of the challenge to delete.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or a `sqlx::Error` if the operation fails.
     pub async fn delete_challenge(pool: &PgPool, challenge_id: i32) -> Result<(), Error> {
         sqlx::query(
             r#"
@@ -41,6 +58,15 @@ impl ChallengeRepository {
         Ok(())
     }
 
+    /// Finds a challenge by its name and category ID in the `challenges` table.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    /// * `challenge_name` - The name of the challenge to search for.
+    /// * `challenge_category_id` - The ID of the category to which the challenge belongs.
+    ///
+    /// # Returns
+    /// A `Result` containing an optional `Challenge` if found, or a `sqlx::Error` if the operation fails.
     pub async fn find_challenge_by_name_and_category_id(
         pool: &PgPool,
         challenge_name: &str,
@@ -59,6 +85,14 @@ impl ChallengeRepository {
             .await
     }
 
+    /// Finds a challenge by its ID in the `challenges` table.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    /// * `challenge_id` - The ID of the challenge to search for.
+    ///
+    /// # Returns
+    /// A `Result` containing an optional `Challenge` if found, or a `sqlx::Error` if the operation fails.
     pub async fn find_challenge_by_id(pool: &PgPool, challenge_id: i32) -> Result<Option<Challenge>, Error> {
         sqlx::query_as::<_, Challenge>(
             r#"
@@ -72,6 +106,13 @@ impl ChallengeRepository {
             .await
     }
 
+    /// Retrieves all challenges from the `challenges` table.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    ///
+    /// # Returns
+    /// A `Result` containing a vector of `Challenge` or a `sqlx::Error` if the operation fails.
     pub async fn get_all_challenges(pool: &PgPool) -> Result<Vec<Challenge>, Error> {
         sqlx::query_as::<_, Challenge>(
             r#"
