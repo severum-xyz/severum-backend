@@ -2,13 +2,33 @@ use sqlx::PgPool;
 use crate::models::challenge::{Challenge, NewChallenge};
 use crate::repositories::challenge_repository::ChallengeRepository;
 
+/// Service for managing challenges, including retrieval and creation.
 pub struct ChallengeService;
 
 impl ChallengeService {
+    /// Retrieves all challenges from the database.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    ///
+    /// # Returns
+    /// A `Result` containing a vector of `Challenge` or a `sqlx::Error` if the query fails.
     pub async fn get_all_challenges(pool: &PgPool) -> Result<Vec<Challenge>, sqlx::Error> {
         ChallengeRepository::get_all_challenges(pool).await
     }
 
+    /// Finds an existing challenge by its name and category or creates a new one if it doesn't exist.
+    ///
+    /// # Arguments
+    /// * `pool` - A reference to the database connection pool.
+    /// * `challenge_name` - The name of the challenge to find or create.
+    /// * `category_id` - The ID of the category associated with the challenge.
+    /// * `difficulty` - The difficulty level of the challenge.
+    /// * `description` - A description of the challenge.
+    /// * `hint` - An optional hint for the challenge.
+    ///
+    /// # Returns
+    /// A `Result` containing the `Challenge` or a `sqlx::Error` if the operation fails.
     pub async fn find_or_create_challenge(
         pool: &PgPool,
         challenge_name: &str,
